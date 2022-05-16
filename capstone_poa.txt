@@ -1,0 +1,5 @@
+Plan of Action for Capstone 1:
+
+1. Clean data
+- normalize data
+- decide what data is needed and how to organize

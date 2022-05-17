@@ -1,3 +1,4 @@
+from math import prod
 from xml.sax.handler import property_declaration_handler
 from flask import Flask, render_template, request, redirect, url_for
 from flask_wtf import FlaskForm
@@ -20,6 +21,92 @@ db = SQLAlchemy(app)
 ###### MODELS ##########
 ########################
 
+class Main(db.Model):
+
+    __tablename__ = "tt_main"
+
+    prod_id = db.Column(db.Text, primary_key=True)
+    esp_id = db.Column(db.Text)
+
+    def __init__(self, prod_id, esp_id):
+        self.prod_id = prod_id
+        self.esp_id = esp_id
+
+class ProductInfo(db.Model):
+
+    __tablename__ = "prod_info"
+
+    prod_id = db.Column(db.Text, primary_key=True)
+    prod_name = db.Column(db.Text)
+    manuf = db.Column(db.Text)
+    esp_id = db.Column(db.Text)
+
+    def __init__(self, prod_id, prod_name, prod_manuf, esp_id):
+        self.prod_id = prod_id
+        self.prod_name = prod_name
+        self.manuf = prod_manuf
+        self.esp_id = esp_id
+
+
+class ProductSales(db.model):
+
+    __tablename__ = "prod_sales"
+
+    id = db.Column(db.Integer, primary_key=True)
+    prod_id = db.Column(db.Text, db.ForeignKey('prod_info'))
+    emp_id = db.Column(db.Text)
+    week_num = db.Column(db.Text)
+    year = db.Column(db.Integer)
+    quant_sold = db.Column(db.Integer)
+
+    def __init__(self, prod_id, emp_id, week_num, year, quant_sold):
+        self.prod_id = prod_id
+        self.emp_id = emp_id
+        self.week_num = week_num
+        self.year = year
+        self.quant_sold = quant_sold
+
+class ProductPrices(db.Model):
+
+    __tablename__ = "prod_prices"
+
+    prod_id = db.Column(db.Text)
+    quarter = db.Column(db.Text)
+    year = db.Column(db.Integer)
+    price = db.Column(db.Integer)
+
+    def __init__(self, prod_id, quarter):
+        self.prod_id = prod_id
+        self.quarter = quarter
+    
+
+class WarrantySales(db.Column):
+
+    __tablename__ = "warranty_sales"
+
+    esp_id = db.Column(db.Text, primary_key=True)
+    emp_id = db.Column(db.Text)
+    week_num = db.Column(db.Text)
+    year = db.Column(db.Integer)
+    quant_sold = db.Column(db.Integer)
+
+    def __init__(self, esp_id, emp_id, week_num):
+        self.esp_id = esp_id
+        self.emp_id = emp_id
+        self.week_num = week_num
+
+class WarrantyPrices(db.Model):
+
+    __tablename__ = "warranty_prices"
+
+    esp_id = db.Column(db.Text)
+    price_2020 = db.Column(db.Integer)
+    price_2021 = db.Column(db.Integer)
+
+    def __init__(self, esp_id):
+        self.esp_id = esp_id
+
+
 class Employees(db.Model):
 
     __tablename__ = "employees"
@@ -36,16 +123,7 @@ class Employees(db.Model):
         self.region = region
 
 
-
-#class Sales(db.Model):
-
-   # __tablename__ = 'sales'
-
-
-
-
-
-
+db.create_all()
 
 
 ###### PAGES VIEWS ######

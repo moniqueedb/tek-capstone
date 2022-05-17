@@ -6,6 +6,11 @@
     <h1>TractorTEK</h1>
     <h2>View Sales Data Here.</h2>
     <br>
+    <ul>
+      {% for pup in puppies %}
+      <li>{{pup.pup_name}}</li>
+      {% endfor %}
+    </ul>
   </center>
 
 </div>

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+
+  <div class="jumbotron">
+    <h2>Entered the wrong information?</h2>
+    <p>fill out information below so your sale can be removed from our system.</p>
+      <form method="POST">
+        {{form.hidden_tag()}}
+
+        
+        {{ form.empid.label }}
+        {{ form.empid() }}
+
+        <br>
+
+        {{ form.date_of_sale.label }}
+        {{ form.date_of_sale() }}
+
+        <br>
+
+        {{ form.prod_code.label }}
+        {{ form.prod_code() }}
+
+        <br>
+
+        {{ form.submit(class="btn btn-secondary") }}
+
+      </form>
+  </div>
+
+{% endblock %}

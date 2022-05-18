@@ -1,19 +1,32 @@
+from email.utils import format_datetime, formatdate
+from sqlite3 import Date
+from tokenize import String
 from flask_wtf import FlaskForm
-from wtforms import StringField,IntegerField,SubmitField
+from wtforms import StringField,IntegerField,SubmitField, DateField
 
 
 
 
-class AddForm(FlaskForm):
-    empid = StringField("Enter Employee Id: ")
-    date_of_sale = IntegerField("Product was sold on: ")
-    prod_code = StringField("Select Product Code: ")
+class AddProductForm(FlaskForm):
+    emp_id = StringField("Enter Employee Id: ")
+    week = StringField("Week of Sale: ")
+    year = DateField("Year: ", format="%Y")
+    prod_id = StringField("Select Product Code: ")
+    quant_sold = IntegerField("Quantity of Products Sold: ")
+    submit = SubmitField("Submit")
+
+class AddWarrantyForm(FlaskForm):
+    emp_id = StringField("Enter Employee Id: ")
+    esp_id = StringField("Extended Service Plan Code: ")
+    Week = StringField("Week of Sale: ")
+    year = DateField("Year: ")
+    quant_sold = IntegerField("Quantity of Warranties Sold: ")
     submit = SubmitField("Submit")
 
 class DelForm(FlaskForm):
-    empid = IntegerField("Enter Employee Id: ")
-    date_of_sale = IntegerField("Product was sold on: ")
-    prod_code = StringField("Select Product Code: ")
+    emp_id = IntegerField("Enter Employee Id: ")
+    date = IntegerField("Product was sold on: ")
+    prod_id = StringField("Select Product Code: ")
     submit = SubmitField("Remove sale")
 
 #view sales from certain week?

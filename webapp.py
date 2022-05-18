@@ -2,10 +2,11 @@ from math import prod
 from xml.sax.handler import property_declaration_handler
 from flask import Flask, render_template, request, redirect, url_for
 from flask_wtf import FlaskForm
-from form import AddForm, DelForm
+from form import AddProductForm, DelForm, AddWarrantyForm
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine
 import pymysql
+import mysql.connector
 
 app = Flask(__name__)
 
@@ -25,8 +26,8 @@ class Main(db.Model):
 
     __tablename__ = "tt_main"
 
-    prod_id = db.Column(db.Text, primary_key=True)
-    esp_id = db.Column(db.Text)
+    prod_id = db.Column(db.VARCHAR(10), primary_key=True)
+    esp_id = db.relationship("warranty_sales", backref="tt_main")
 
     def __init__(self, prod_id, esp_id):
         self.prod_id = prod_id
@@ -36,10 +37,12 @@ class ProductInfo(db.Model):
 
     __tablename__ = "prod_info"
 
-    prod_id = db.Column(db.Text, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
+    prod_id = db.Column(db.VARCHAR(10), db.ForeignKey('prod_sales.prod_id'))
     prod_name = db.Column(db.Text)
     manuf = db.Column(db.Text)
-    esp_id = db.Column(db.Text)
+    esp_id = db.relationship('warranty_sales', backref='prod_info')
+    
 
     def __init__(self, prod_id, prod_name, prod_manuf, esp_id):
         self.prod_id = prod_id
@@ -48,13 +51,12 @@ class ProductInfo(db.Model):
         self.esp_id = esp_id
 
 
-class ProductSales(db.model):
+class ProductSales(db.Model):
 
     __tablename__ = "prod_sales"
 
-    id = db.Column(db.Integer, primary_key=True)
-    prod_id = db.Column(db.Text, db.ForeignKey('prod_info'))
-    emp_id = db.Column(db.Text)
+    prod_id = db.Column(db.VARCHAR(10), db.ForeignKey('prod_info.prod_id'), primary_key=True)
+    emp_id = db.relationship('employees', backref='prod_sales')
     week_num = db.Column(db.Text)
     year = db.Column(db.Integer)
     quant_sold = db.Column(db.Integer)
@@ -70,7 +72,7 @@ class ProductPrices(db.Model):
 
     __tablename__ = "prod_prices"
 
-    prod_id = db.Column(db.Text)
+    prod_id = db.Column(db.VARCHAR(10), db.ForeignKey('prod_sales.prod_id'), primary_key=True)
     quarter = db.Column(db.Text)
     year = db.Column(db.Integer)
     price = db.Column(db.Integer)
@@ -80,12 +82,12 @@ class ProductPrices(db.Model):
         self.quarter = quarter
     
 
-class WarrantySales(db.Column):
+class WarrantySales(db.Model):
 
     __tablename__ = "warranty_sales"
 
-    esp_id = db.Column(db.Text, primary_key=True)
-    emp_id = db.Column(db.Text)
+    esp_id = db.Column(db.VARCHAR(10), primary_key=True)
+    emp_id = db.relationship("employees", backref="warranty_sales")
     week_num = db.Column(db.Text)
     year = db.Column(db.Integer)
     quant_sold = db.Column(db.Integer)
@@ -99,7 +101,8 @@ class WarrantyPrices(db.Model):
 
     __tablename__ = "warranty_prices"
 
-    esp_id = db.Column(db.Text)
+    id = db.Column(db.Integer, primary_key=True)
+    esp_id = db.Column(db.VARCHAR(10), db.ForeignKey('warranty_sales.esp_id'))
     price_2020 = db.Column(db.Integer)
     price_2021 = db.Column(db.Integer)
 
@@ -139,19 +142,54 @@ def index():
 #page to view info about TractorTek
 @app.route('/aboutpage')
 def about():
-    return "<h2>some text here</h2>"
+    return "<h2>TractorTEK is a regional reseller of agricultural equipment based on the US West Coast.</h2>"
 
 
 
 #page to add sales data
-@app.route('/add_sales')
-def add_sales():
-    form = AddForm()
+@app.route('/add_prod')
+def add_prod():
+    form = AddProductForm()
 
-    #if form.validate_on_submit()
+    if form.validate_on_submit():
+
+        emp_id = form.emp_id.data
+        week = form.week.data
+        year = form.year.data
+        prod_id = form.prod_id.data
+        quant_sold = form.quant_sold.data
+
+        new_sale = ProductSales(emp_id, prod_id, week, year, quant_sold)
+        db.session.add(new_sale)
+        db.session.commit()
+        
+        return redirect(url_for(sales_list))
 
 
-    return render_template('add_sales.html', form=form)
+    return render_template('add_prod.html', form=form)
+
+
+
+@app.route('/warranties')
+def add_esp():
+    form = AddWarrantyForm()
+
+    if form.validate_on_submit():
+
+        emp_id = form.emp_id.data
+        week = form.week.data
+        year = form.year.data
+        esp_id = form.esp_id.data
+        quant_sold = form.quant_sold.data
+
+        new_esp = WarrantySales(emp_id, esp_id, week, year, quant_sold)
+        db.session.add(new_esp)
+        db.session.commit()
+        
+        return redirect(url_for(sales_list))
+
+
+    return render_template('add_esp.html', form=form)
 
 
 
@@ -169,7 +207,10 @@ def del_sales():
 @app.route('/list')
 def sales_list():
 
-    return render_template('sales_list.html')
+    tt_prosales = ProductSales.query.all()
+    tt_warrsales = WarrantySales.query.all()
+
+    return render_template('sales_list.html', tt_prosales=tt_prosales, tt_warrsales=tt_warrsales)
 
 
 

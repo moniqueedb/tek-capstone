@@ -12,15 +12,15 @@ class AddProductForm(FlaskForm):
     week = StringField("Week of Sale: ")
     year = DateField("Year: ", format="%Y")
     prod_id = StringField("Select Product Code: ")
-    quant_sold = IntegerField("Quantity of Products Sold: ")
+    quantity = IntegerField("Quantity of Products Sold: ")
     submit = SubmitField("Submit")
 
 class AddWarrantyForm(FlaskForm):
     emp_id = StringField("Enter Employee Id: ")
     esp_id = StringField("Extended Service Plan Code: ")
-    Week = StringField("Week of Sale: ")
+    week = StringField("Week of Sale: ")
     year = DateField("Year: ")
-    quant_sold = IntegerField("Quantity of Warranties Sold: ")
+    quantity = IntegerField("Quantity of Warranties Sold: ")
     submit = SubmitField("Submit")
 
 class DelForm(FlaskForm):

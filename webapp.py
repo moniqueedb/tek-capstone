@@ -1,10 +1,11 @@
 from math import prod
+from tkinter import Y
 from xml.sax.handler import property_declaration_handler
 from flask import Flask, render_template, request, redirect, url_for
 from flask_wtf import FlaskForm
 from form import AddProductForm, DelForm, AddWarrantyForm
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, DateTime, ForeignKeyConstraint
 import pymysql
 import mysql.connector
 
@@ -22,60 +23,54 @@ db = SQLAlchemy(app)
 ###### MODELS ##########
 ########################
 
-class Main(db.Model):
-
-    __tablename__ = "tt_main"
-
-    prod_id = db.Column(db.VARCHAR(10), primary_key=True)
-    esp_id = db.relationship("warranty_sales", backref="tt_main")
-
-    def __init__(self, prod_id, esp_id):
-        self.prod_id = prod_id
-        self.esp_id = esp_id
-
 class ProductInfo(db.Model):
 
     __tablename__ = "prod_info"
 
-    id = db.Column(db.Integer, primary_key=True)
-    prod_id = db.Column(db.VARCHAR(10), db.ForeignKey('prod_sales.prod_id'))
+    prod_id = db.Column(db.VARCHAR(10), db.ForeignKey('ProductSales.prod_id'),primary_key=True)
     prod_name = db.Column(db.Text)
     manuf = db.Column(db.Text)
-    esp_id = db.relationship('warranty_sales', backref='prod_info')
+    esp_id = db.Column(db.Text)
     
 
-    def __init__(self, prod_id, prod_name, prod_manuf, esp_id):
-        self.prod_id = prod_id
+    def __init__(self, prod_name, prod_manuf, esp_id):
         self.prod_name = prod_name
         self.manuf = prod_manuf
         self.esp_id = esp_id
+
 
 
 class ProductSales(db.Model):
 
     __tablename__ = "prod_sales"
 
-    prod_id = db.Column(db.VARCHAR(10), db.ForeignKey('prod_info.prod_id'), primary_key=True)
-    emp_id = db.relationship('employees', backref='prod_sales')
-    week_num = db.Column(db.Text)
-    year = db.Column(db.Integer)
-    quant_sold = db.Column(db.Integer)
+    sales_id = db.Column(db.Integer, primary_key=True)
+    prod_id = db.Column(db.Text, db.ForeignKey('ProductInfo.prod_id'))
+    emp_id = db.Column(db.Text, db.ForeignKey('Employees.emp_id'))
+    week = db.Column(db.Text, nullable=False)
+    year = db.Column(db.Integer, nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    #__table_args__=(ForeignKeyConstraint([prod_id, emp_id], [ProductInfo.prod_id, Employees.emp_id]), {})
 
-    def __init__(self, prod_id, emp_id, week_num, year, quant_sold):
+
+    def __init__(self, prod_id, emp_id, week, year, quantity):
         self.prod_id = prod_id
         self.emp_id = emp_id
-        self.week_num = week_num
+        self.week = week
         self.year = year
-        self.quant_sold = quant_sold
+        self.quantity = quantity
 
 class ProductPrices(db.Model):
 
     __tablename__ = "prod_prices"
 
-    prod_id = db.Column(db.VARCHAR(10), db.ForeignKey('prod_sales.prod_id'), primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
+    prod_id = db.Column(db.Text, db.ForeignKey('ProductSales.prod_id'))
     quarter = db.Column(db.Text)
     year = db.Column(db.Integer)
     price = db.Column(db.Integer)
+
+
 
     def __init__(self, prod_id, quarter):
         self.prod_id = prod_id
@@ -86,23 +81,25 @@ class WarrantySales(db.Model):
 
     __tablename__ = "warranty_sales"
 
-    esp_id = db.Column(db.VARCHAR(10), primary_key=True)
-    emp_id = db.relationship("employees", backref="warranty_sales")
-    week_num = db.Column(db.Text)
+    sales_id = db.Column(db.Integer, primary_key=True)
+    esp_id = db.Column(db.Text, db.ForeignKey('WarrantyPrices.esp_id'))
+    emp_id = db.Column(db.Text, db.ForeignKey('Employees.emp_id'))
+    week = db.Column(db.Text)
     year = db.Column(db.Integer)
-    quant_sold = db.Column(db.Integer)
+    quantity = db.Column(db.Integer)
 
-    def __init__(self, esp_id, emp_id, week_num):
+    def __init__(self, esp_id, emp_id, week, quantity):
         self.esp_id = esp_id
         self.emp_id = emp_id
-        self.week_num = week_num
+        self.week = week
+        self.quantity = quantity
 
 class WarrantyPrices(db.Model):
 
     __tablename__ = "warranty_prices"
 
     id = db.Column(db.Integer, primary_key=True)
-    esp_id = db.Column(db.VARCHAR(10), db.ForeignKey('warranty_sales.esp_id'))
+    esp_id = db.Column(db.VARCHAR(10), db.ForeignKey('WarrantySales.esp_id'))
     price_2020 = db.Column(db.Integer)
     price_2021 = db.Column(db.Integer)
 
@@ -114,17 +111,16 @@ class Employees(db.Model):
 
     __tablename__ = "employees"
 
-    emp_id = db.Column(db.Text, primary_key=True)
+    emp_id = db.Column(db.Text, db.ForeignKey('ProductSales.emp_id'),primary_key=True)
     name = db.Column(db.Text)
-    pay_grd = db.Column(db.Text)
+    paygrade = db.Column(db.Text)
     region = db.Column(db.Text)
 
-    def __init__(self, emp_id, name, pay_grd, region):
+    def __init__(self, emp_id, name, paygrade, region):
         self.emp_id = emp_id
         self.name = name
-        self.pay_grd = pay_grd
+        self.paygrade = paygrade
         self.region = region
-
 
 db.create_all()
 
@@ -147,7 +143,7 @@ def about():
 
 
 #page to add sales data
-@app.route('/add_prod')
+@app.route('/add_prod', methods=['GET', 'POST'])
 def add_prod():
     form = AddProductForm()
 
@@ -157,9 +153,9 @@ def add_prod():
         week = form.week.data
         year = form.year.data
         prod_id = form.prod_id.data
-        quant_sold = form.quant_sold.data
+        quantity = form.quantity.data
 
-        new_sale = ProductSales(emp_id, prod_id, week, year, quant_sold)
+        new_sale = ProductSales(emp_id, prod_id, week, year, quantity)
         db.session.add(new_sale)
         db.session.commit()
         
@@ -170,7 +166,7 @@ def add_prod():
 
 
 
-@app.route('/warranties')
+@app.route('/warranties', methods=['GET', 'POST'])
 def add_esp():
     form = AddWarrantyForm()
 
@@ -180,9 +176,9 @@ def add_esp():
         week = form.week.data
         year = form.year.data
         esp_id = form.esp_id.data
-        quant_sold = form.quant_sold.data
+        quantity = form.quantity.data
 
-        new_esp = WarrantySales(emp_id, esp_id, week, year, quant_sold)
+        new_esp = WarrantySales(emp_id, esp_id, week, year, quantity)
         db.session.add(new_esp)
         db.session.commit()
         
@@ -207,10 +203,10 @@ def del_sales():
 @app.route('/list')
 def sales_list():
 
-    tt_prosales = ProductSales.query.all()
-    tt_warrsales = WarrantySales.query.all()
+    allsales = ProductSales.query.all()
+    #tt_warrsales = WarrantySales.query.all()
 
-    return render_template('sales_list.html', tt_prosales=tt_prosales, tt_warrsales=tt_warrsales)
+    return render_template('sales_list.html', allsales=allsales)
 
 
 

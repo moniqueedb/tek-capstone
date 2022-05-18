@@ -10,7 +10,7 @@ from wtforms import StringField,IntegerField,SubmitField, DateField
 class AddProductForm(FlaskForm):
     emp_id = StringField("Enter Employee Id: ")
     week = StringField("Week of Sale: ")
-    year = DateField("Year: ", format="%Y")
+    year = IntegerField("Year: ")
     prod_id = StringField("Select Product Code: ")
     quantity = IntegerField("Quantity of Products Sold: ")
     submit = SubmitField("Submit")
@@ -19,7 +19,7 @@ class AddWarrantyForm(FlaskForm):
     emp_id = StringField("Enter Employee Id: ")
     esp_id = StringField("Extended Service Plan Code: ")
     week = StringField("Week of Sale: ")
-    year = DateField("Year: ")
+    year = IntegerField("Year: ")
     quantity = IntegerField("Quantity of Warranties Sold: ")
     submit = SubmitField("Submit")
 

@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, redirect, url_for
 from flask_wtf import FlaskForm
 from form import AddProductForm, DelForm, AddWarrantyForm
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import create_engine, DateTime, ForeignKeyConstraint
+from sqlalchemy import create_engine, DateTime, ForeignKeyConstraint, ForeignKey
 import pymysql
 import mysql.connector
 
@@ -23,14 +23,16 @@ db = SQLAlchemy(app)
 ###### MODELS ##########
 ########################
 
+SET_GLOBAL_FOREIGN_KEY_CHECKS=0
+
 class ProductInfo(db.Model):
 
     __tablename__ = "prod_info"
 
-    prod_id = db.Column(db.VARCHAR(10), db.ForeignKey('ProductSales.prod_id'),primary_key=True)
-    prod_name = db.Column(db.Text)
-    manuf = db.Column(db.Text)
-    esp_id = db.Column(db.Text)
+    prod_id = db.Column(db.VARCHAR(8),primary_key=True)
+    prod_name = db.Column(db.VARCHAR(30))
+    manuf = db.Column(db.VARCHAR(30))
+    esp_id = db.Column(db.VARCHAR(8))
     
 
     def __init__(self, prod_name, prod_manuf, esp_id):
@@ -39,33 +41,69 @@ class ProductInfo(db.Model):
         self.esp_id = esp_id
 
 
+class Employees(db.Model):
+
+    __tablename__ = "employees"
+
+    emp_id = db.Column(db.VARCHAR(10),primary_key=True)
+    name = db.Column(db.VARCHAR(30))
+    paygrade = db.Column(db.VARCHAR(5))
+    region = db.Column(db.VARCHAR(2))
+
+    def __init__(self, emp_id, name, paygrade, region):
+        self.emp_id = emp_id
+        self.name = name
+        self.paygrade = paygrade
+        self.region = region
+
+
 
 class ProductSales(db.Model):
 
     __tablename__ = "prod_sales"
 
+
     sales_id = db.Column(db.Integer, primary_key=True)
-    prod_id = db.Column(db.Text, db.ForeignKey('ProductInfo.prod_id'))
-    emp_id = db.Column(db.Text, db.ForeignKey('Employees.emp_id'))
+    prod_id = db.Column(db.Text, ForeignKey('prod_info.prod_id'))
+    emp_id = db.Column(db.Text, ForeignKey('employees.emp_id'))
     week = db.Column(db.Text, nullable=False)
     year = db.Column(db.Integer, nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
     #__table_args__=(ForeignKeyConstraint([prod_id, emp_id], [ProductInfo.prod_id, Employees.emp_id]), {})
 
 
-    def __init__(self, prod_id, emp_id, week, year, quantity):
+    def __init__(self, emp_id, prod_id, week, year, quantity):
+        self.emp_id = emp_id
         self.prod_id = prod_id
+        self.week = week
+        self.year = year
+        self.quantity = quantity
+
+class WarrantySales(db.Model):
+
+    __tablename__ = "warranty_sales"
+
+    sales_id = db.Column(db.Integer, primary_key=True)
+    esp_id = db.Column(db.VARCHAR(8), ForeignKey('warranty_prices.esp_id'))
+    emp_id = db.Column(db.VARCHAR(10), ForeignKey('employees.emp_id'))
+    week = db.Column(db.VARCHAR(5))
+    year = db.Column(db.Integer)
+    quantity = db.Column(db.Integer)
+
+    def __init__(self, esp_id, emp_id, week, year, quantity):
+        self.esp_id = esp_id
         self.emp_id = emp_id
         self.week = week
         self.year = year
         self.quantity = quantity
+
 
 class ProductPrices(db.Model):
 
     __tablename__ = "prod_prices"
 
     id = db.Column(db.Integer, primary_key=True)
-    prod_id = db.Column(db.Text, db.ForeignKey('ProductSales.prod_id'))
+    prod_id = db.Column(db.Text, ForeignKey('ProductSales.prod_id'))
     quarter = db.Column(db.Text)
     year = db.Column(db.Integer)
     price = db.Column(db.Integer)
@@ -77,29 +115,12 @@ class ProductPrices(db.Model):
         self.quarter = quarter
     
 
-class WarrantySales(db.Model):
-
-    __tablename__ = "warranty_sales"
-
-    sales_id = db.Column(db.Integer, primary_key=True)
-    esp_id = db.Column(db.Text, db.ForeignKey('WarrantyPrices.esp_id'))
-    emp_id = db.Column(db.Text, db.ForeignKey('Employees.emp_id'))
-    week = db.Column(db.Text)
-    year = db.Column(db.Integer)
-    quantity = db.Column(db.Integer)
-
-    def __init__(self, esp_id, emp_id, week, quantity):
-        self.esp_id = esp_id
-        self.emp_id = emp_id
-        self.week = week
-        self.quantity = quantity
-
 class WarrantyPrices(db.Model):
 
     __tablename__ = "warranty_prices"
 
     id = db.Column(db.Integer, primary_key=True)
-    esp_id = db.Column(db.VARCHAR(10), db.ForeignKey('WarrantySales.esp_id'))
+    esp_id = db.Column(db.VARCHAR(10), ForeignKey('warranty_sales.esp_id'))
     price_2020 = db.Column(db.Integer)
     price_2021 = db.Column(db.Integer)
 
@@ -107,20 +128,7 @@ class WarrantyPrices(db.Model):
         self.esp_id = esp_id
 
 
-class Employees(db.Model):
 
-    __tablename__ = "employees"
-
-    emp_id = db.Column(db.Text, db.ForeignKey('ProductSales.emp_id'),primary_key=True)
-    name = db.Column(db.Text)
-    paygrade = db.Column(db.Text)
-    region = db.Column(db.Text)
-
-    def __init__(self, emp_id, name, paygrade, region):
-        self.emp_id = emp_id
-        self.name = name
-        self.paygrade = paygrade
-        self.region = region
 
 db.create_all()
 
@@ -149,6 +157,7 @@ def add_prod():
 
     if form.validate_on_submit():
 
+#organize order
         emp_id = form.emp_id.data
         week = form.week.data
         year = form.year.data

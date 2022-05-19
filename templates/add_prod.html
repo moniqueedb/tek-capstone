@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="jumbotron">
+  <h2>Sales Entry Form</h2>
+  <p>Please enter the correct information below:</p>
+  <br>
+
+    <form method="POST">
+      {{ form.hidden_tag() }}
+
+
+
+      <br>
+
+      {{ form.emp_id.label }}
+      {{ form.emp_id() }}
+
+      <br>
+
+      {{ form.prod_id.label }}
+      {{ form.prod_id() }}
+
+      <br>
+
+      {{ form.week.label }}
+      {{ form.week() }}
+
+      <br>
+
+      {{ form.year.label }}
+      {{ form.year() }}
+
+      <br>
+
+      {{ form.quantity.label }}
+      {{ form.quantity() }}
+
+      <br>
+
+    
+      
+
+      {{ form.submit(class="btn btn-secondary") }}
+
+    </form>
+
+
+
+</div>
+
+
+
+
+{% endblock %}

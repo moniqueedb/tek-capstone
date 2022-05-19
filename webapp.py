@@ -168,7 +168,7 @@ def add_prod():
         db.session.add(new_sale)
         db.session.commit()
         
-        return redirect(url_for(sales_list))
+        return redirect(url_for('index'))
 
 
     return render_template('add_prod.html', form=form)
@@ -182,27 +182,19 @@ def add_esp():
     if form.validate_on_submit():
 
         emp_id = form.emp_id.data
+        esp_id = form.esp_id.data
         week = form.week.data
         year = form.year.data
-        esp_id = form.esp_id.data
         quantity = form.quantity.data
 
         new_esp = WarrantySales(emp_id, esp_id, week, year, quantity)
         db.session.add(new_esp)
         db.session.commit()
         
-        return redirect(url_for(sales_list))
+        return redirect(url_for('index'))
 
 
     return render_template('add_esp.html', form=form)
-
-
-
-#page to delete sales data
-@app.route('/delete')
-def del_sales():
-    form = DelForm()
-    return render_template('del_sales.html', form=form)
 
 
 
